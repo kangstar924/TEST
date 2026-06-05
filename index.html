@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>치이카와 다마고치 🐭</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #FFF8F0;
+      --ivory: #FFF5E6;
+      --warm-white: #FFFBF5;
+      --pink: #FFB5C2;
+      --pink-dark: #FF8FA3;
+      --mint: #B8E6D5;
+      --mint-dark: #7ECDB0;
+      --lavender: #D4C5F9;
+      --lavender-dark: #B8A4E8;
+      --peach: #FFD4B8;
+      --peach-dark: #FFB88C;
+      --sky: #B8D4F0;
+      --sky-dark: #8BB8E8;
+      --text: #5D4E4E;
+      --text-light: #8B7B7B;
+      --shadow: rgba(93, 78, 78, 0.12);
+      --warning: #FF6B6B;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(160deg, var(--cream) 0%, var(--ivory) 50%, #FFE8D6 100%);
+      min-height: 100vh;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; min-height: 100vh; padding: 20px; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* ===== SELECTION SCREEN ===== */
+    #select-screen {
+      justify-content: center;
+      gap: 24px;
+    }
+
+    .title {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .title span { display: block; font-size: 0.65em; font-weight: 500; color: var(--text-light); margin-top: 4px; }
+
+    .char-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .char-card {
+      background: var(--warm-white);
+      border: 3px solid transparent;
+      border-radius: 20px;
+      padding: 16px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .char-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px var(--shadow); }
+    .char-card.selected { border-color: var(--pink-dark); background: #FFF0F3; transform: scale(1.05); }
+
+    .char-card .emoji { font-size: 2.8rem; display: block; margin-bottom: 6px; }
+    .char-card .name { font-size: 0.85rem; font-weight: 700; }
+
+    .name-input-wrap {
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .name-input-wrap label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .name-input-wrap input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 2px solid var(--pink);
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 1rem;
+      background: var(--warm-white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .name-input-wrap input:focus { border-color: var(--pink-dark); }
+
+    .btn-start {
+      padding: 14px 48px;
+      background: linear-gradient(135deg, var(--pink) 0%, var(--pink-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255, 143, 163, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-start:hover { transform: scale(1.05); }
+    .btn-start:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ===== GAME SCREEN ===== */
+    #game-screen { padding: 12px; max-width: 480px; margin: 0 auto; width: 100%; }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .pet-info { font-weight: 700; font-size: 1rem; }
+    .pet-info .stage-badge {
+      display: inline-block;
+      background: var(--lavender);
+      color: var(--text);
+      font-size: 0.7rem;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    .age-display { font-size: 0.8rem; color: var(--text-light); }
+
+    /* ===== STATS ===== */
+    .stats-panel {
+      width: 100%;
+      background: var(--warm-white);
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 10px var(--shadow);
+      margin-bottom: 12px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stat-row:last-child { margin-bottom: 0; }
+
+    .stat-emoji { font-size: 1.1rem; width: 28px; text-align: center; }
+    .stat-label { font-size: 0.75rem; font-weight: 500; width: 36px; color: var(--text-light); }
+
+    .stat-bar-bg {
+      flex: 1;
+      height: 14px;
+      background: #F0E8E0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease, background 0.3s;
+    }
+
+    .stat-bar-fill.hunger { background: linear-gradient(90deg, var(--peach), var(--peach-dark)); }
+    .stat-bar-fill.happiness { background: linear-gradient(90deg, var(--pink), var(--pink-dark)); }
+    .stat-bar-fill.fatigue { background: linear-gradient(90deg, var(--sky), var(--sky-dark)); }
+    .stat-bar-fill.intimacy { background: linear-gradient(90deg, var(--lavender), var(--lavender-dark)); }
+    .stat-bar-fill.low { background: linear-gradient(90deg, #FFB0B0, var(--warning)) !important; }
+
+    .stat-value { font-size: 0.7rem; font-weight: 700; width: 32px; text-align: right; color: var(--text-light); }
+
+    /* ===== CHARACTER AREA ===== */
+    .character-area {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .speech-bubble {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      border: 2px solid var(--pink);
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      max-width: 280px;
+      text-align: center;
+      box-shadow: 0 3px 10px var(--shadow);
+      z-index: 10;
+      animation: bubblePop 0.4s ease;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 10px solid transparent;
+      border-top-color: var(--pink);
+    }
+
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 8px solid transparent;
+      border-top-color: white;
+      z-index: 1;
+    }
+
+    @keyframes bubblePop {
+      0% { transform: translateX(-50%) scale(0); opacity: 0; }
+      60% { transform: translateX(-50%) scale(1.1); }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
+    }
+
+    /* ===== CHIIKAWA CHARACTER (CSS) ===== */
+    .chiikawa {
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .chiikawa.stage-egg { transform: scale(0.7); }
+    .chiikawa.stage-baby { transform: scale(0.75); }
+    .chiikawa.stage-child { transform: scale(0.9); }
+    .chiikawa.stage-adult { transform: scale(1); }
+
+    .chiikawa-body {
+      width: 120px;
+      height: 110px;
+      background: #FFFDF8;
+      border-radius: 50% 50% 45% 45%;
+      position: relative;
+      box-shadow: 0 6px 20px var(--shadow), inset 0 -4px 8px rgba(0,0,0,0.03);
+      border: 2px solid #F5EDE3;
+    }
+
+    .stage-egg .chiikawa-body {
+      width: 90px;
+      height: 110px;
+      border-radius: 50% 50% 48% 48%;
+      background: linear-gradient(180deg, #FFF8E8 0%, #FFE8C8 100%);
+    }
+
+    .stage-egg .ear,
+    .stage-egg .cheeks,
+    .stage-egg .eyes { display: none; }
+    .stage-egg .mouth { font-size: 1.4rem; }
+    .stage-egg .type-emoji { bottom: 50%; right: 50%; transform: translate(50%, 50%); font-size: 2rem; opacity: 0.3; }
+
+    .stage-baby .chiikawa-body { width: 90px; height: 85px; }
+    .stage-child .chiikawa-body { width: 105px; height: 98px; }
+
+    /* Ears */
+    .ear {
+      position: absolute;
+      width: 28px;
+      height: 32px;
+      background: #FFFDF8;
+      border: 2px solid #F5EDE3;
+      top: -18px;
+    }
+
+    .ear.left { left: 12px; border-radius: 50% 50% 0 50%; transform: rotate(-15deg); }
+    .ear.right { right: 12px; border-radius: 50% 50% 50% 0; transform: rotate(15deg); }
+
+    .ear-inner {
+      position: absolute;
+      width: 14px;
+      height: 16px;
+      background: var(--pink);
+      opacity: 0.4;
+      border-radius: 50%;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .type-rabbit .ear { width: 22px; height: 48px; top: -38px; border-radius: 50% 50% 10% 10%; }
+    .type-rabbit .ear.left { left: 18px; }
+    .type-rabbit .ear.right { right: 18px; }
+
+    .type-cat .ear { width: 26px; height: 28px; top: -16px; border-radius: 50% 50% 0 0; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+    .type-cat .ear.left { left: 14px; transform: rotate(-10deg); }
+    .type-cat .ear.right { right: 14px; transform: rotate(10deg); }
+
+    /* Face */
+    .face {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -40%);
+      text-align: center;
+      width: 100%;
+    }
+
+    .eyes {
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+      margin-bottom: 4px;
+    }
+
+    .eye {
+      width: 10px;
+      height: 12px;
+      background: #3D2B1F;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .eye::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      right: 1px;
+    }
+
+    .cheeks {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+    }
+
+    .cheek {
+      width: 16px;
+      height: 10px;
+      background: var(--pink);
+      opacity: 0.5;
+      border-radius: 50%;
+    }
+
+    .mouth {
+      font-size: 14px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+
+    .type-emoji {
+      position: absolute;
+      bottom: -8px;
+      right: -12px;
+      font-size: 1.6rem;
+      filter: drop-shadow(0 2px 4px var(--shadow));
+    }
+
+    /* Egg shell pattern */
+    .egg-pattern {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      overflow: hidden;
+    }
+
+    .egg-spot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: var(--peach);
+      opacity: 0.3;
+      border-radius: 50%;
+    }
+
+    /* Animations */
+    .anim-happy { animation: bounce 0.6s ease; }
+    .anim-eat { animation: wobble 0.5s ease; }
+    .anim-sleep { animation: sleepBob 2s ease infinite; }
+    .anim-sad { animation: sadShake 1.5s ease infinite; }
+    .anim-play { animation: jumpBounce 0.4s ease; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-20px) scale(1.05); }
+      50% { transform: translateY(-10px); }
+      70% { transform: translateY(-15px); }
+    }
+
+    @keyframes wobble {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-8deg); }
+      75% { transform: rotate(8deg); }
+    }
+
+    @keyframes sleepBob {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(4px) rotate(2deg); }
+    }
+
+    @keyframes sadShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    @keyframes jumpBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-25px) scale(1.08); }
+    }
+
+    /* ZZZ animation */
+    .zzz-container {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      pointer-events: none;
+    }
+
+    .zzz {
+      position: absolute;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--lavender-dark);
+      opacity: 0;
+      animation: zzzFloat 2s ease infinite;
+    }
+
+    .zzz:nth-child(1) { animation-delay: 0s; }
+    .zzz:nth-child(2) { animation-delay: 0.6s; left: 12px; font-size: 1.2rem; }
+    .zzz:nth-child(3) { animation-delay: 1.2s; left: 24px; font-size: 1.4rem; }
+
+    @keyframes zzzFloat {
+      0% { opacity: 0; transform: translateY(0) translateX(0); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-30px) translateX(10px); }
+    }
+
+    /* Eating particles */
+    .eat-particle {
+      position: absolute;
+      font-size: 1.2rem;
+      animation: eatFloat 0.8s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes eatFloat {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+    }
+
+    /* Hearts on pet */
+    .heart-particle {
+      position: absolute;
+      font-size: 1.3rem;
+      animation: heartFloat 1s ease forwards;
+      pointer-events: none;
+    }
+
+    @keyframes heartFloat {
+      0% { opacity: 1; transform: translateY(0) scale(0.5); }
+      50% { opacity: 1; transform: translateY(-25px) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-50px) scale(0.8); }
+    }
+
+    /* Warning */
+    .warning-banner {
+      width: 100%;
+      background: linear-gradient(90deg, #FFE0E0, #FFD0D0);
+      border: 2px solid var(--warning);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-align: center;
+      color: #C0392B;
+      margin-bottom: 10px;
+      animation: warningPulse 1.5s ease infinite;
+      display: none;
+    }
+
+    .warning-banner.show { display: block; }
+
+    @keyframes warningPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ===== ACTION BUTTONS ===== */
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .action-btn {
+      padding: 14px 8px;
+      border: none;
+      border-radius: 18px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 3px 10px var(--shadow);
+    }
+
+    .action-btn .btn-emoji { font-size: 1.5rem; }
+    .action-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px var(--shadow); }
+    .action-btn:active { transform: translateY(0); }
+    .action-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-pet { background: linear-gradient(135deg, #FFD6E0, var(--pink)); color: var(--text); }
+    .btn-feed { background: linear-gradient(135deg, #FFE8D0, var(--peach)); color: var(--text); }
+    .btn-sleep { background: linear-gradient(135deg, #D8E8F8, var(--sky)); color: var(--text); }
+    .btn-play { background: linear-gradient(135deg, #E8D8F8, var(--lavender)); color: var(--text); }
+
+    /* ===== MINIGAME OVERLAY ===== */
+    .minigame-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(93, 78, 78, 0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .minigame-overlay.active { display: flex; }
+
+    .minigame-box {
+      background: var(--warm-white);
+      border-radius: 24px;
+      padding: 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      animation: bubblePop 0.3s ease;
+    }
+
+    .minigame-box h3 { margin-bottom: 8px; font-size: 1.1rem; }
+    .minigame-box p { font-size: 0.85rem; color: var(--text-light); margin-bottom: 16px; }
+
+    .minigame-area {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(180deg, #E8F4FD 0%, #D0E8F8 100%);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      cursor: pointer;
+      border: 3px solid var(--sky);
+    }
+
+    .minigame-ball {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle at 30% 30%, #FF8FA3, #FF6B8A);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .minigame-score {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--pink-dark);
+      margin-bottom: 12px;
+    }
+
+    .minigame-timer {
+      height: 8px;
+      background: #F0E8E0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .minigame-timer-fill {
+      height: 100%;
+      background: var(--lavender-dark);
+      border-radius: 4px;
+      transition: width 0.1s linear;
+    }
+
+    .btn-close-game {
+      padding: 10px 32px;
+      background: var(--text-light);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 380px) {
+      .char-grid { gap: 8px; }
+      .char-card { padding: 12px 4px; }
+      .char-card .emoji { font-size: 2.2rem; }
+      .actions { gap: 8px; }
+      .action-btn { padding: 12px 6px; font-size: 0.8rem; }
+      .character-area { height: 230px; }
+      .chiikawa-body { width: 100px; height: 92px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Character Selection -->
+  <div id="select-screen" class="screen active">
+    <h1 class="title">치이카와 다마고치 🐭<span>귀여운 친구를 키워보세요!</span></h1>
+    <div class="char-grid">
+      <div class="char-card selected" data-type="mouse" data-emoji="🐭" data-name="햄쯱이">
+        <span class="emoji">🐭</span>
+        <span class="name">햄쯱이</span>
+      </div>
+      <div class="char-card" data-type="rabbit" data-emoji="🐰" data-name="토깽이">
+        <span class="emoji">🐰</span>
+        <span class="name">토깽이</span>
+      </div>
+      <div class="char-card" data-type="cat" data-emoji="🐱" data-name="냐옹이">
+        <span class="emoji">🐱</span>
+        <span class="name">냐옹이</span>
+      </div>
+    </div>
+    <div class="name-input-wrap">
+      <label for="pet-name">이름을 지어주세요</label>
+      <input type="text" id="pet-name" placeholder="예: 치이카와" maxlength="12">
+    </div>
+    <button class="btn-start" id="btn-start" disabled>게임 시작! ✨</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen">
+    <div class="game-header">
+      <div class="pet-info">
+        <span id="display-name">치이카와</span>
+        <span class="stage-badge" id="stage-badge">🥚 알</span>
+      </div>
+      <div class="age-display" id="age-display">0일</div>
+    </div>
+
+    <div class="warning-banner" id="warning-banner"></div>
+
+    <div class="stats-panel">
+      <div class="stat-row">
+        <span class="stat-emoji">🍙</span>
+        <span class="stat-label">배고픔</span>
+        <div class="stat-bar-bg"><div class="stat-bar-fill hunger" id="bar-hunger" style="width:80%"></div></div>
+        <span class="stat-value" id="val-hunger">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-emoji">💖</span>
+        <span class="stat-label">행복</span>
+        <div class="stat-bar-bg"><div class="stat-bar-fill happiness" id="bar-happiness" style="width:80%"></div></div>
+        <span class="stat-value" id="val-happiness">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-emoji">😴</span>
+        <span class="stat-label">피로</span>
+        <div class="stat-bar-bg"><div class="stat-bar-fill fatigue" id="bar-fatigue" style="width:80%"></div></div>
+        <span class="stat-value" id="val-fatigue">80</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-emoji">🤝</span>
+        <span class="stat-label">친밀</span>
+        <div class="stat-bar-bg"><div class="stat-bar-fill intimacy" id="bar-intimacy" style="width:50%"></div></div>
+        <span class="stat-value" id="val-intimacy">50</span>
+      </div>
+    </div>
+
+    <div class="character-area" id="character-area">
+      <div class="speech-bubble" id="speech-bubble">안녕! 나 치이카와야~ 🐭</div>
+      <div class="chiikawa stage-egg type-mouse" id="chiikawa">
+        <div class="chiikawa-body">
+          <div class="egg-pattern" id="egg-pattern"></div>
+          <div class="ear left"><div class="ear-inner"></div></div>
+          <div class="ear right"><div class="ear-inner"></div></div>
+          <div class="cheeks">
+            <div class="cheek"></div>
+            <div class="cheek"></div>
+          </div>
+          <div class="face">
+            <div class="eyes">
+              <div class="eye"></div>
+              <div class="eye"></div>
+            </div>
+            <div class="mouth" id="mouth">ω</div>
+          </div>
+          <span class="type-emoji" id="type-emoji">🐭</span>
+        </div>
+      </div>
+      <div class="zzz-container" id="zzz-container" style="display:none">
+        <span class="zzz">Z</span>
+        <span class="zzz">Z</span>
+        <span class="zzz">Z</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn btn-pet" id="btn-pet">
+        <span class="btn-emoji">🤗</span>쓰다듬기
+      </button>
+      <button class="action-btn btn-feed" id="btn-feed">
+        <span class="btn-emoji">🍙</span>밥 먹이기
+      </button>
+      <button class="action-btn btn-sleep" id="btn-sleep">
+        <span class="btn-emoji">🌙</span>재우기
+      </button>
+      <button class="action-btn btn-play" id="btn-play">
+        <span class="btn-emoji">⚽</span>같이 놀기
+      </button>
+    </div>
+  </div>
+
+  <!-- Minigame Overlay -->
+  <div class="minigame-overlay" id="minigame-overlay">
+    <div class="minigame-box">
+      <h3>⚽ 공 받기 게임!</h3>
+      <p>튀는 공을 클릭해서 친밀도를 올려보세요!</p>
+      <div class="minigame-score">점수: <span id="mg-score">0</span></div>
+      <div class="minigame-timer"><div class="minigame-timer-fill" id="mg-timer" style="width:100%"></div></div>
+      <div class="minigame-area" id="minigame-area">
+        <div class="minigame-ball" id="mg-ball">⚽</div>
+      </div>
+      <button class="btn-close-game" id="btn-close-game">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    // ===== STATE =====
+    const state = {
+      type: 'mouse',
+      typeEmoji: '🐭',
+      typeName: '햄쯱이',
+      name: '',
+      hunger: 80,
+      happiness: 80,
+      fatigue: 80,
+      intimacy: 50,
+      age: 0,
+      stage: 'egg',
+      isSleeping: false,
+      sleepingUntil: 0,
+      lastTick: Date.now(),
+      gameStarted: false
+    };
+
+    const STAGES = [
+      { id: 'egg', label: '🥚 알', minAge: 0 },
+      { id: 'baby', label: '🐣 아기', minAge: 3 },
+      { id: 'child', label: '🌱 어린이', minAge: 8 },
+      { id: 'adult', label: '⭐ 성체', minAge: 15 }
+    ];
+
+    const DIALOGUES = {
+      idle: ['오늘도 좋은 하루~ ✨', '뭔가 재밌는 일 없을까?', '히히, 기분 좋아~', '같이 놀자! 🎵'],
+      hungry: ['배고파요... 🍙', '먹을 거 없나요?', '꼬르륵... 배가 고파요', '밥 주세요~ 제발요!'],
+      tired: ['너무 피곤해요... 😴', '졸려요... 눈이 감겨요', '잠자고 싶어요...', '하암... 졸려졸려'],
+      sad: ['흑흑... 슬퍼요 😢', '나 외로워...', '도와줘요...', '너무 힘들어요...'],
+      happy: ['기뻐요!! 💖', '최고야~! 행복해!', '와아! 너무 좋아!', '사랑해요~ ♡'],
+      pet: ['쓰담쓰담... 좋아요~', '더 더~! 기분 최고!', '따뜻해요... 행복해요', '쓰다듬어 주셔서 고마워요!'],
+      feed: ['맛있어요! 냠냠 🍙', '배불러요~ 고마워요!', '최고의 밥이에요!', '냠냠냠~ 또 먹고 싶어요!'],
+      sleep: ['쿨쿨... 좋은 꿈 꿀게요', '포근해요... 잘 자요', 'Zzz... 내일 또 놀자', '꿈속에서도 행복해요~'],
+      play: ['재밌다!! 또 해요!', '와! 잘했어요!', '신나요~! ⚽', '같이 놀아서 행복해요!'],
+      growth: ['어라? 뭔가 달라진 것 같아요!', '자랐어요! 대단해요~', '우와! 성장했어요! ✨']
+    };
+
+    const STAGE_NAMES = { egg: '알', baby: '아기', child: '어린이', adult: '성체' };
+
+    // ===== DOM =====
+    const $ = id => document.getElementById(id);
+
+    // ===== SELECTION =====
+    let selectedCard = document.querySelector('.char-card.selected');
+
+    document.querySelectorAll('.char-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.char-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedCard = card;
+        checkStartReady();
+      });
+    });
+
+    $('pet-name').addEventListener('input', checkStartReady);
+
+    function checkStartReady() {
+      $('btn-start').disabled = $('pet-name').value.trim().length === 0;
+    }
+
+    $('btn-start').addEventListener('click', startGame);
+
+    function startGame() {
+      state.type = selectedCard.dataset.type;
+      state.typeEmoji = selectedCard.dataset.emoji;
+      state.typeName = selectedCard.dataset.name;
+      state.name = $('pet-name').value.trim();
+
+      $('select-screen').classList.remove('active');
+      $('game-screen').classList.add('active');
+
+      initCharacter();
+      updateUI();
+      showDialogue('idle');
+      state.gameStarted = true;
+      state.lastTick = Date.now();
+    }
+
+    // ===== CHARACTER =====
+    function initCharacter() {
+      const chi = $('chiikawa');
+      chi.className = `chiikawa stage-egg type-${state.type}`;
+      $('type-emoji').textContent = state.typeEmoji;
+      $('display-name').textContent = state.name;
+
+      const eggPattern = $('egg-pattern');
+      eggPattern.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const spot = document.createElement('div');
+        spot.className = 'egg-spot';
+        spot.style.left = (15 + Math.random() * 60) + '%';
+        spot.style.top = (20 + Math.random() * 50) + '%';
+        spot.style.width = (8 + Math.random() * 8) + 'px';
+        spot.style.height = spot.style.width;
+        eggPattern.appendChild(spot);
+      }
+    }
+
+    function getStage() {
+      let current = STAGES[0];
+      for (const s of STAGES) {
+        if (state.age >= s.minAge) current = s;
+      }
+      return current;
+    }
+
+    function updateStage() {
+      const stage = getStage();
+      if (stage.id !== state.stage) {
+        const oldStage = state.stage;
+        state.stage = stage.id;
+        const chi = $('chiikawa');
+        chi.className = `chiikawa stage-${stage.id} type-${state.type}`;
+        if (stage.id !== 'egg') {
+          $('egg-pattern').innerHTML = '';
+        }
+        $('stage-badge').textContent = stage.label;
+        if (oldStage !== 'egg' || stage.id !== 'egg') {
+          showDialogue('growth');
+          triggerAnim('anim-happy');
+        }
+      }
+    }
+
+    function setMouth(expression) {
+      const mouths = {
+        happy: '▽',
+        sad: '︵',
+        eat: 'д',
+        sleep: 'ー',
+        normal: 'ω',
+        play: '∀'
+      };
+      $('mouth').textContent = mouths[expression] || mouths.normal;
+    }
+
+    function getMood() {
+      if (state.hunger <= 0 || state.happiness <= 0 || state.fatigue <= 0) return 'sad';
+      if (state.hunger < 25) return 'hungry';
+      if (state.fatigue < 25) return 'tired';
+      if (state.happiness > 70) return 'happy';
+      return 'idle';
+    }
+
+    // ===== DIALOGUE =====
+    let dialogueTimer = null;
+
+    function showDialogue(category) {
+      const pool = DIALOGUES[category] || DIALOGUES.idle;
+      const text = pool[Math.floor(Math.random() * pool.length)];
+      const bubble = $('speech-bubble');
+      bubble.textContent = text;
+      bubble.style.animation = 'none';
+      bubble.offsetHeight;
+      bubble.style.animation = '';
+
+      clearTimeout(dialogueTimer);
+      dialogueTimer = setTimeout(() => {
+        if (!state.isSleeping) showDialogue(getMood());
+      }, 5000);
+    }
+
+    // ===== ANIMATIONS =====
+    function triggerAnim(className) {
+      const chi = $('chiikawa');
+      chi.classList.remove('anim-happy', 'anim-eat', 'anim-sleep', 'anim-sad', 'anim-play');
+      chi.offsetHeight;
+      chi.classList.add(className);
+      setTimeout(() => chi.classList.remove(className), className === 'anim-sleep' ? 0 : 800);
+    }
+
+    function spawnParticles(type, count) {
+      const area = $('character-area');
+      const emojis = type === 'heart' ? ['💖', '💕', '♡', '💗'] : ['🍙', '🍚', '✨'];
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        p.className = type === 'heart' ? 'heart-particle' : 'eat-particle';
+        p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        p.style.left = (40 + Math.random() * 30) + '%';
+        p.style.top = (30 + Math.random() * 20) + '%';
+        area.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
+      }
+    }
+
+    // ===== STATS =====
+    function clamp(val) { return Math.max(0, Math.min(100, val)); }
+
+    function updateStatBar(id, value) {
+      const bar = $(`bar-${id}`);
+      const val = $(`val-${id}`);
+      bar.style.width = value + '%';
+      val.textContent = Math.round(value);
+      bar.classList.toggle('low', value < 25);
+    }
+
+    function updateUI() {
+      $('display-name').textContent = state.name;
+      $('stage-badge').textContent = getStage().label;
+      $('age-display').textContent = state.age + '일';
+
+      updateStatBar('hunger', state.hunger);
+      updateStatBar('happiness', state.happiness);
+      updateStatBar('fatigue', state.fatigue);
+      updateStatBar('intimacy', state.intimacy);
+
+      const mood = getMood();
+      if (mood === 'sad') {
+        setMouth('sad');
+        triggerAnim('anim-sad');
+        $('chiikawa').classList.add('anim-sad');
+      } else {
+        $('chiikawa').classList.remove('anim-sad');
+        setMouth(mood === 'happy' ? 'happy' : mood === 'hungry' ? 'sad' : mood === 'tired' ? 'sleep' : 'normal');
+      }
+
+      const warnings = [];
+      if (state.hunger <= 0) warnings.push('배고파요! 밥을 주세요 🍙');
+      if (state.happiness <= 0) warnings.push('외로워요! 쓰다듬어 주세요 🤗');
+      if (state.fatigue <= 0) warnings.push('너무 피곤해요! 재워주세요 😴');
+
+      const banner = $('warning-banner');
+      if (warnings.length > 0) {
+        banner.textContent = '⚠️ ' + warnings.join(' · ');
+        banner.classList.add('show');
+      } else {
+        banner.classList.remove('show');
+      }
+
+      const sleeping = state.isSleeping && Date.now() < state.sleepingUntil;
+      $('btn-pet').disabled = sleeping;
+      $('btn-feed').disabled = sleeping;
+      $('btn-play').disabled = sleeping;
+    }
+
+    // ===== TICK =====
+    setInterval(() => {
+      if (!state.gameStarted) return;
+
+      const now = Date.now();
+      const elapsed = (now - state.lastTick) / 1000;
+      state.lastTick = now;
+
+      if (state.isSleeping && now >= state.sleepingUntil) {
+        state.isSleeping = false;
+        $('zzz-container').style.display = 'none';
+        $('chiikawa').classList.remove('anim-sleep');
+        setMouth('happy');
+        showDialogue('happy');
+      }
+
+      if (!state.isSleeping) {
+        state.hunger = clamp(state.hunger - 0.8 * elapsed);
+        state.happiness = clamp(state.happiness - 0.5 * elapsed);
+        state.fatigue = clamp(state.fatigue - 0.6 * elapsed);
+      }
+
+      updateUI();
+    }, 1000);
+
+    // Age tick (every 30 seconds = 1 day for demo)
+    setInterval(() => {
+      if (!state.gameStarted) return;
+      state.age++;
+      updateStage();
+      updateUI();
+    }, 30000);
+
+    // ===== ACTIONS =====
+    $('btn-pet').addEventListener('click', () => {
+      if (state.isSleeping) return;
+      state.happiness = clamp(state.happiness + 15);
+      state.intimacy = clamp(state.intimacy + 5);
+      setMouth('happy');
+      triggerAnim('anim-happy');
+      spawnParticles('heart', 4);
+      showDialogue('pet');
+      updateUI();
+    });
+
+    $('btn-feed').addEventListener('click', () => {
+      if (state.isSleeping) return;
+      state.hunger = clamp(state.hunger + 25);
+      state.happiness = clamp(state.happiness + 5);
+      setMouth('eat');
+      triggerAnim('anim-eat');
+      spawnParticles('eat', 3);
+      showDialogue('feed');
+      updateUI();
+    });
+
+    $('btn-sleep').addEventListener('click', () => {
+      if (state.isSleeping) return;
+      state.isSleeping = true;
+      state.sleepingUntil = Date.now() + 8000;
+      state.fatigue = clamp(state.fatigue + 40);
+      state.happiness = clamp(state.happiness + 5);
+      setMouth('sleep');
+      $('chiikawa').classList.add('anim-sleep');
+      $('zzz-container').style.display = 'block';
+      showDialogue('sleep');
+      updateUI();
+
+      setTimeout(() => {
+        if (state.isSleeping) {
+          state.isSleeping = false;
+          $('zzz-container').style.display = 'none';
+          $('chiikawa').classList.remove('anim-sleep');
+          setMouth('happy');
+          showDialogue('happy');
+          updateUI();
+        }
+      }, 8000);
+    });
+
+    // ===== MINIGAME =====
+    let mgActive = false;
+    let mgScore = 0;
+    let mgTimer = null;
+    let mgAnimFrame = null;
+    let ballX = 0, ballY = 0, ballVX = 3, ballVY = 4;
+    const MG_DURATION = 15;
+
+    $('btn-play').addEventListener('click', startMinigame);
+
+    function startMinigame() {
+      if (state.isSleeping) return;
+      mgActive = true;
+      mgScore = 0;
+      $('mg-score').textContent = '0';
+      $('minigame-overlay').classList.add('active');
+
+      const area = $('minigame-area');
+      const ball = $('mg-ball');
+      const rect = area.getBoundingClientRect();
+      ballX = rect.width / 2 - 20;
+      ballY = rect.height / 2 - 20;
+      ballVX = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 2);
+      ballVY = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 2);
+
+      let timeLeft = MG_DURATION;
+      $('mg-timer').style.width = '100%';
+
+      mgTimer = setInterval(() => {
+        timeLeft -= 0.1;
+        $('mg-timer').style.width = (timeLeft / MG_DURATION * 100) + '%';
+        if (timeLeft <= 0) endMinigame();
+      }, 100);
+
+      function gameLoop() {
+        if (!mgActive) return;
+        const w = area.clientWidth - 40;
+        const h = area.clientHeight - 40;
+
+        ballX += ballVX;
+        ballY += ballVY;
+
+        if (ballX <= 0 || ballX >= w) { ballVX *= -1; ballX = Math.max(0, Math.min(w, ballX)); }
+        if (ballY <= 0 || ballY >= h) { ballVY *= -1; ballY = Math.max(0, Math.min(h, ballY)); }
+
+        ball.style.left = ballX + 'px';
+        ball.style.top = ballY + 'px';
+
+        mgAnimFrame = requestAnimationFrame(gameLoop);
+      }
+
+      mgAnimFrame = requestAnimationFrame(gameLoop);
+    }
+
+    $('minigame-area').addEventListener('click', (e) => {
+      if (!mgActive) return;
+      const ball = $('mg-ball');
+      const ballRect = ball.getBoundingClientRect();
+      const clickX = e.clientX;
+      const clickY = e.clientY;
+
+      if (clickX >= ballRect.left && clickX <= ballRect.right &&
+          clickY >= ballRect.top && clickY <= ballRect.bottom) {
+        mgScore++;
+        $('mg-score').textContent = mgScore;
+        ballVX *= 1.1;
+        ballVY *= 1.1;
+        ball.textContent = '✨';
+        setTimeout(() => ball.textContent = '⚽', 200);
+      }
+    });
+
+    function endMinigame() {
+      mgActive = false;
+      clearInterval(mgTimer);
+      cancelAnimationFrame(mgAnimFrame);
+
+      const bonus = mgScore * 3;
+      state.intimacy = clamp(state.intimacy + bonus);
+      state.happiness = clamp(state.happiness + Math.min(mgScore * 2, 20));
+      showDialogue('play');
+      triggerAnim('anim-play');
+      updateUI();
+
+      setTimeout(() => {
+        $('minigame-overlay').classList.remove('active');
+      }, 1500);
+    }
+
+    $('btn-close-game').addEventListener('click', () => {
+      if (mgActive) endMinigame();
+      else $('minigame-overlay').classList.remove('active');
+    });
+  </script>
+</body>
+</html>
