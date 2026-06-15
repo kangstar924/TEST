@@ -5,3 +5,5 @@ torch>=2.1.0
 Pillow>=10.0.0
 # 선택: 음성 안내(TTS). 없으면 자동으로 비활성화됨.
 pyttsx3>=2.90
+# 선택: 웹 UI 연동(pipeline.SignPipeline에 socketio 전달 시).
+# flask-socketio>=5.3.0

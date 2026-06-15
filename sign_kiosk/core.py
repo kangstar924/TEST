@@ -6,20 +6,28 @@
 
 from __future__ import annotations
 
+import collections
 import json
 import os
-from typing import List, Sequence, Tuple
+import time
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
 from .config import (
+    CONFIDENCE_THRESHOLD,
     FEATURE_DIM,
+    GLOSS_GAP_SEC,
     LH_END,
     LH_START,
+    LOW_CONF_MAX,
+    NUM_DIGITS,
     POSE_END,
+    RAW_BUFFER_SIZE,
     RH_END,
     RH_START,
     SEQ_LEN,
+    TIMEOUT_SEC,
 )
 
 # torch는 무겁고 환경에 따라 없을 수 있으므로 사용 시점에 import 한다.
@@ -194,3 +202,184 @@ class SignClassifier:
         top3 = [(self.idx_to_label[int(i)], float(probs[i])) for i in top3_idx]
         best = int(top3_idx[0])
         return self.idx_to_label[best], float(probs[best]), top3
+
+
+# ==========================================
+# 글로스 배열 파싱
+# ==========================================
+def parse_terminal_glosses(glosses: List[str], valid_set) -> Optional[str]:
+    """글로스 배열에서 첫 번째 유효 목적지명을 반환."""
+    for g in glosses:
+        if g in valid_set:
+            return g
+    return None
+
+
+def parse_num_glosses(glosses: List[str], digits=NUM_DIGITS) -> Dict[str, int]:
+    """'어른/아이' 키워드로 카운트 대상을 바꾸며 숫자를 채운다.
+
+    예) [어른, 3, 아이, 2] -> {"adult": 3, "child": 2}
+    """
+    result = {"adult": 0, "child": 0}
+    current_key = "adult"
+    for g in glosses:
+        if g == "어른":
+            current_key = "adult"
+        elif g == "아이":
+            current_key = "child"
+        elif g in digits:
+            result[current_key] = int(g)
+    return result
+
+
+# ==========================================
+# 글로스 수집기 (프레임 구동)
+#   매 프레임 update(results)를 호출하면 내부적으로 버퍼/안정성/예측/
+#   다수결/중복·노이즈 제거/gap 종료를 처리한다.
+#   카메라 루프(pipeline)와 단일 윈도우 루프(kiosk) 양쪽에서 공용으로 쓴다.
+# ==========================================
+class GlossCollector:
+    def __init__(self, classifier: "SignClassifier", mode: str,
+                 stable_threshold: float, valid_set=None, noise_set=None,
+                 on_message: Optional[Callable[[str], None]] = None,
+                 cooldown: float = 1.2, appear_min: float = 1.0):
+        self.clf = classifier
+        self.mode = mode                       # "terminal" | "num"
+        self.stable_threshold = stable_threshold
+        self.valid_set = valid_set or set()
+        self.noise_set = noise_set or set()
+        self.on_message = on_message
+        self.cooldown = cooldown
+        self.appear_min = appear_min
+        self.reset()
+
+    def reset(self):
+        self.frame_buffer = collections.deque(maxlen=RAW_BUFFER_SIZE)
+        self.hand_center_history = collections.deque(maxlen=10)
+        self.prediction_history = collections.deque(maxlen=7)
+        self.hand_stable_frames = 0
+        self.hand_appear_time: Optional[float] = None
+        self.is_collecting = False
+        self.hand_lost_time: Optional[float] = None
+        self.result_time = 0.0
+        self.glosses: List[str] = []
+        self.last_gloss_time: Optional[float] = None
+        self.low_conf_count = 0
+        self.finished = False
+        self.need_reinput = False            # 낮은 confidence 초과
+        self.terminal_confirmed = False
+        self.is_stable = False
+        self.hand_detected = False
+
+    # --- gap 잔여시간(초): UI 카운트다운용 ---
+    def gap_remaining(self) -> Optional[float]:
+        if self.glosses and self.last_gloss_time:
+            return max(0.0, GLOSS_GAP_SEC - (time.time() - self.last_gloss_time))
+        return None
+
+    def _emit(self, msg: str):
+        if self.on_message:
+            self.on_message(msg)
+
+    def _try_add_gloss(self, label: str, conf: float) -> bool:
+        if conf < CONFIDENCE_THRESHOLD:
+            self.low_conf_count += 1
+            if self.low_conf_count >= LOW_CONF_MAX:
+                self.need_reinput = True
+                self.finished = True
+            return False
+        self.low_conf_count = 0
+
+        if self.mode == "terminal" and label in self.noise_set:
+            return False
+
+        if self.glosses and self.glosses[-1] == label:
+            return False
+
+        self.glosses.append(label)
+        self.last_gloss_time = time.time()
+        return True
+
+    def update(self, results) -> Optional[str]:
+        """한 프레임 처리. 새로 추가된 글로스를 반환(없으면 None)."""
+        if self.finished:
+            return None
+
+        self.frame_buffer.append(extract_keypoints(results))
+        self.hand_detected = (results.left_hand_landmarks is not None
+                              or results.right_hand_landmarks is not None)
+
+        hc = get_hand_center(results)
+        self.is_stable = False
+        if hc is not None:
+            self.hand_center_history.append(hc)
+            if len(self.hand_center_history) >= 5:
+                recent = np.array(list(self.hand_center_history)[-5:])
+                self.is_stable = np.std(recent, axis=0).mean() < self.stable_threshold
+                self.hand_stable_frames = (
+                    self.hand_stable_frames + 1 if self.is_stable else 0
+                )
+            else:
+                self.hand_stable_frames = 0
+        else:
+            self.hand_stable_frames = 0
+            self.hand_center_history.clear()
+
+        now = time.time()
+        cooldown_over = (now - self.result_time >= self.cooldown)
+
+        # gap 종료
+        if self.glosses and self.last_gloss_time:
+            if now - self.last_gloss_time >= GLOSS_GAP_SEC:
+                self.finished = True
+                return None
+            if now - self.last_gloss_time >= TIMEOUT_SEC:
+                self.finished = True
+                return None
+
+        added_label = None
+        if self.hand_detected:
+            self.hand_lost_time = None
+            if self.hand_appear_time is None:
+                self.hand_appear_time = now
+
+            if not self.is_stable:
+                self.is_collecting = True
+            elif self.is_stable and self.is_collecting and cooldown_over:
+                if (len(self.frame_buffer) >= SEQ_LEN
+                        and now - self.hand_appear_time >= self.appear_min):
+                    seq = sample_from_buffer(self.frame_buffer, SEQ_LEN)
+                    label, conf, _ = self.clf.predict(seq)
+
+                    self.prediction_history.append(label)
+                    if len(self.prediction_history) >= 3:
+                        counts: Dict[str, int] = {}
+                        for p in self.prediction_history:
+                            counts[p] = counts.get(p, 0) + 1
+                        majority = max(counts, key=counts.get)
+                        if counts[majority] / len(self.prediction_history) >= 0.5:
+                            self.result_time = now
+                            self.prediction_history.clear()
+                            self.frame_buffer.clear()
+                            self.hand_appear_time = None
+                            self.is_collecting = False
+
+                            if self._try_add_gloss(majority, conf):
+                                added_label = majority
+                                if (self.mode == "terminal"
+                                        and majority in self.valid_set):
+                                    self.terminal_confirmed = True
+                                    self.finished = True
+        else:
+            if self.is_collecting:
+                if self.hand_lost_time is None:
+                    self.hand_lost_time = now
+                elif now - self.hand_lost_time >= 0.5:
+                    self.hand_appear_time = None
+                    self.is_collecting = False
+                    self.prediction_history.clear()
+            else:
+                self.hand_appear_time = None
+                self.prediction_history.clear()
+
+        return added_label
