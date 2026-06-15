@@ -302,6 +302,13 @@ class SignPipeline:
             required_keys["child"] = result["child"]
             print(f"[저장] child = {result['child']}")
 
+        # total_people = 어른 + 아이 (스키마에 있으면 자동 계산)
+        if "total_people" in required_keys:
+            adult = required_keys.get("adult") or 0
+            child = required_keys.get("child") or 0
+            required_keys["total_people"] = adult + child
+            print(f"[저장] total_people = {required_keys['total_people']}")
+
     def run_sign_booking(self, required_keys: dict, socketio=None):
         self.recognize_terminal(required_keys, socketio)
         self.recognize_num(required_keys, socketio)
@@ -328,8 +335,17 @@ def main():
     print("=" * 50)
 
     required_keys = {
-        "terminal": None, "date": None, "date_code": None, "time": None,
-        "adult": None, "child": None, "seat": None, "total_price": None,
+        "terminal": None,
+        "date": None,
+        "date_code": None,
+        "time": None,
+        "total_people": None,
+        "seat": None,
+        "adult": None,
+        "child": None,
+        "adult seat": None,
+        "child seat": None,
+        "total_price": None,
     }
 
     pipeline = SignPipeline(cfg)
